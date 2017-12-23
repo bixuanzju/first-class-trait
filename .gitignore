@@ -15,4 +15,6 @@ bundle.tar.gz
 *.fdb_latexmk
 *.fls
 *.log
+*.glob
 *.tex-old
+/coq/CoqSrc.mk.conf
