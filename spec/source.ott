@@ -1,0 +1,503 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% GRAMMAR (LNgen portion)
+
+grammar
+
+% Source language
+
+sexp, ee {{ tex E }}, vv {{ tex v }} :: 'e_' ::= {{ com source expressions }}
+  | x  ::   :: var {{ com variable }}
+  | Top         :: :: top   {{ com top }}
+  | i        :: :: lit   {{ com lit }}
+  | \ x . ee    ::   :: abs
+    (+ bind x in ee +)
+    {{ com abstraction }}
+	  {{ tex [[\]][[x]].\,[[ee]] }}
+  | ee1 ee2     :: :: app  {{ com applications }}
+  | ee1 ,, ee2   :: :: merge  {{ com merge }}
+  | ee : A       :: :: anno   {{ com annotations }}
+  | { l = ee }  ::  :: rcd    {{ com record }}
+  | ee . l  ::  :: proj    {{ com projection }}
+  | ( ee ) :: S :: Paren {{ coq [[ee]] }}
+  | C { ee }                ::   S :: appctx {{ coq 0 }}
+
+styp, A, B, CC {{ tex C }}  :: 'styp_' ::=   {{ com source types }}
+  | Top      :: :: top  {{ com top }}
+  | nat   ::  :: nat   {{ com nat }}
+  | A & B :: :: and {{ com intersection }}
+  | A -> B :: :: arrow {{ com function }}
+  | { l : A } :: :: rcd {{ com record }}
+  | ( A ) :: S:: paren {{ coq [[A]] }}
+  | fs -> A :: S :: lst {{ coq (applyArrow [[fs]] [[A]]) }}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% GRAMMAR  (non LNgen portion)
+
+sctx, GG {{ tex \Gamma }} :: 'sctx_'     ::= {{ com source typing context }} {{ coq list ( atom * styp ) }}
+  | empty          ::   :: Empty {{ coq nil }}
+                                 {{ tex \bullet }}
+                                 {{ com empty context }}
+  | GG , x : A      ::   :: Cons  {{ coq (([[x]]~[[A]])++[[GG]]) }}
+                                 {{ com assumption }}
+
+
+st :: 'st_' ::=
+| A :: :: ty
+| l :: :: la
+
+
+ls, fs {{ tex \mathcal{L} }} :: 'ls_' ::= {{ coq list st }}
+  | []     :: :: empty  {{ coq nil }}
+  | ls , A  :: :: cons1 {{ coq ([[ls]] ++ (cons (st_ty [[A]]) nil)) }}
+  | A , ls :: :: cons2   {{ coq (cons (st_ty [[A]]) [[ls]]) }}
+  | ls , { l } :: :: con3 {{ coq ([[ls]] ++ (cons (st_la [[l]]) nil)) }}
+  | { l } , ls :: :: cons4   {{ coq (cons (st_la [[l]]) [[ls]]) }}
+  | ( ls ) :: S::  paren {{ coq 0 }}
+
+
+
+dirflag :: '' ::= {{ com checking direction }}
+   | =>             ::   :: Inf
+   | <=             ::   :: Chk
+
+
+C {{ tex \mathcal{C} }} :: 'C_' ::= {{ com program context }}
+  | __ :: :: Empty
+  | \ x . C ::  :: Lam
+	{{ tex [[\]][[x]].\,[[C]] }}
+  | C ee :: :: AppL
+  | ee C :: :: AppRd
+  | C ,, ee :: :: MergeL
+  | ee ,, C :: :: MergeR
+  | C : A :: :: Anno
+  | { l = C } :: :: Rcd
+  | C . l :: :: Proj
+  | ( C ) :: S :: Paren {{ coq [[C]] }}
+
+
+parsing
+  styp_arrow <= styp_and
+  styp_arrow right styp_arrow
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Source
+
+defns
+JSubtyping :: '' ::=
+
+defn
+A <: B ~~> c :: :: sub :: S_ {{ com Coercive subtyping }}
+{{ tex [[A]] [[<:]] [[B]] \hlmath{[[~~>]] [[c]]} }}
+by
+
+
+---------------------- :: refl
+A <: A ~~> id
+
+
+A2 <: A3 ~~> c1
+A1 <: A2 ~~> c2
+----------------------- :: trans
+A1 <: A3 ~~> c1 o c2
+
+
+--------------- :: top
+A <: Top ~~> top
+
+
+--------------------------- :: topArr
+Top <: Top -> Top ~~> topArr
+
+
+------------------------------- :: topRcd
+Top <: { l : Top } ~~> < l >
+
+
+B1 <: A1 ~~> c1
+A2 <: B2 ~~> c2
+-------------------------------------- :: arr
+A1 -> A2 <: B1 -> B2 ~~> c1 -> c2
+
+
+A1 <: A2 ~~> c1
+A1 <: A3 ~~> c2
+---------------------------- :: and
+A1 <: A2 & A3 ~~> <c1, c2>
+
+
+------------------------- :: andl
+A1 & A2 <: A1 ~~> p1
+
+
+----------------- :: andr
+A1 & A2 <: A2 ~~> p2
+
+
+
+----------------------------------------------------- :: distArr
+(A1 -> A2) & (A1 -> A3) <: A1 -> A2 & A3 ~~> distArr
+
+
+
+A <: B ~~> c
+-------------------------------------------- :: rcd
+{ l : A } <: { l : B } ~~> { l : c }
+
+
+--------------------------------------------------- :: distRcd
+{ l : A } & { l : B } <: { l : A & B } ~~> distRcd l
+
+
+
+embed {{ coq
+
+
+Fixpoint calAnd (fs : ls) : co :=
+  match fs with
+  | nil => co_id
+  | cons l fs' =>
+    match l with
+    | st_ty _ => (co_trans (co_arr co_id (calAnd fs')) co_distArr)
+    | st_la l => (co_trans (co_rcd l (calAnd fs')) (co_distRcd l))
+    end
+  end.
+
+
+Fixpoint calTop (fs : ls) : co :=
+  match fs with
+  | nil => co_top
+  | cons l fs' =>
+    match l with
+    | st_ty _ =>  (co_trans (co_arr co_id (calTop fs')) (co_trans (co_arr co_top co_top) (co_trans co_topArr co_top)))
+    | st_la l => (co_trans (co_rcd l (calTop fs')) (co_topRcd l))
+    end
+  end.
+
+
+
+
+Fixpoint ptyp2styp (A : styp) : typ :=
+  match A with
+    | styp_nat => a_nat
+    | styp_arrow A1 A2  => a_arrow (ptyp2styp A1) (ptyp2styp A2)
+    | styp_and A1 A2 => a_prod (ptyp2styp A1) (ptyp2styp A2)
+    | styp_top => a_unit
+    | styp_rcd l A => a_rcd l (ptyp2styp A)
+  end.
+
+}}
+
+
+defns
+JASubtype :: '' ::=
+
+defn
+fs |- A <: B ~~> c :: :: ASub :: A_ {{ com Algorithmic subtyping }}
+{{ tex [[fs]] [[|-]] [[A]] \prec : [[B]] [[~~>]] [[c]] }} by
+
+
+------------------------- :: nat
+[] |- nat <: nat ~~> id
+
+
+
+fs |- A <: nat ~~> c
+--------------------------------------------- :: rcdNat
+{ l } , fs |- { l : A } <: nat ~~> {l : c}
+
+
+
+fs , { l } |- A <: B ~~> c
+---------------------------- :: rcd
+fs |- A <: { l : B } ~~> c
+
+
+-------------------------- :: top
+fs |- A <: Top ~~> < fs >1 o top
+
+
+
+fs |- A <: B1 ~~> c1
+fs |- A <: B2 ~~> c2
+------------------------------------------------------- :: and
+fs |- A <: B1 & B2 ~~> < fs >2 o <c1 , c2>
+
+
+fs , B1 |- A <: B2 ~~> c
+---------------------------- :: arr
+fs |- A <: B1 -> B2 ~~> c
+
+
+fs |- A1 <: nat ~~> c
+---------------------------------- :: andN1
+fs |- A1 & A2 <: nat ~~> c o p1
+
+
+fs |- A2 <: nat ~~> c
+---------------------------------- :: andN2
+fs |- A1 & A2 <: nat ~~> c o p2
+
+
+
+[] |- A <: A1 ~~> c1
+fs |- A2 <: nat ~~> c2
+--------------------------------------- :: arrNat
+A, fs |- A1 -> A2 <: nat ~~> c1 -> c2
+
+
+
+
+defns
+Disjoint :: '' ::=
+
+defn A ** B :: :: disjoint    :: 'D_'  {{ com Disjointness }} by
+
+
+--------------- :: topL
+Top ** A
+
+
+------------------ :: topR
+A ** Top
+
+
+A2 ** B2
+--------------------- :: arr
+A1 -> A2 ** B1 -> B2
+
+
+A1 ** B
+A2 ** B
+--------------- :: andL
+A1 & A2 ** B
+
+
+A ** B1
+A ** B2
+--------------- :: andR
+A ** B1 & B2
+
+
+A ** B
+------------------------ :: rcdEq
+{ l : A } ** { l : B }
+
+
+
+l1 <> l2
+------------------------- :: rcdNeq
+{ l1 : A } ** { l2 : B }
+
+
+---------------------- :: axNatArr
+nat ** A1 -> A2
+
+
+---------------------- :: axArrNat
+A1 -> A2 ** nat
+
+
+
+---------------------- :: axNatRcd
+nat ** { l : A }
+
+
+---------------------- :: axRcdNat
+{ l : A } ** nat
+
+
+---------------------- :: axArrRcd
+A1 -> A2 ** { l : A }
+
+
+---------------------- :: axRcdArr
+{ l : A } ** A1 -> A2
+
+
+
+
+
+
+defns
+JSTyping :: '' ::=
+
+defn GG  |- ee dirflag A ~~> e ::  :: has_type :: 'T_'
+{{ com Source bidirectional typechecking }}
+{{ tex [[GG]] [[|-]] [[ee]] [[dirflag]] [[A]] \hlmath{[[~~>]] [[e]]} }}
+by
+
+uniq GG
+----------------- :: top
+GG |- Top => Top ~~> unit
+
+
+uniq GG
+----------------- :: lit
+GG |- i => nat ~~> i
+
+
+uniq GG
+x : A in GG
+--------------------- :: var
+GG |- x => A ~~> x
+
+
+GG |- ee1 => A1 -> A2 ~~> e1
+GG |- ee2 <= A1 ~~> e2
+------------------------------- :: app
+GG |- ee1 ee2 => A2 ~~> e1 e2
+
+
+GG |- ee1 => A1 ~~> e1
+GG |- ee2 => A2 ~~> e2
+A1 ** A2
+----------------------------------------------- :: merge
+GG |- ee1 ,, ee2 => A1 & A2 ~~> < e1 , e2 >
+
+
+
+GG |- ee => A ~~> e
+--------------------------------------------- :: rcd
+GG |- { l = ee } => { l : A } ~~> { l = e }
+
+
+GG |- ee => { l : A } ~~> e
+-------------------------------- :: proj
+GG |- ee.l => A ~~> e.l
+
+
+
+GG |- ee <= A ~~> e
+------------------------- :: anno
+GG |- ee : A => A ~~> e
+
+
+GG, x:A |- ee <= B ~~> e
+--------------------------------- :: abs
+GG |- \x. ee <= A -> B ~~> \x.e
+
+
+GG |- ee => B ~~> e
+B <: A ~~> c
+--------------------- :: sub
+GG |- ee <= A ~~> c e
+
+
+defns
+
+JCTyping :: '' ::=
+
+defn C : ( GG dirflag1 A ) ~> ( GG' dirflag2 B ) ~~> cc ::  :: CTyp :: 'CTyp_' {{ com context typing }} by
+
+
+
+--------------------------------------- :: empty1
+__ : (GG => A) ~> (GG => A) ~~> __
+
+
+----------------------------------------- :: empty2
+__ : (GG <= A) ~> (GG <= A) ~~> __
+
+
+
+C : (GG => A) ~> (GG' => A1 -> A2) ~~> cc
+GG' |- ee2 <= A1 ~~> e
+----------------------------------------------- :: appL1
+C ee2 : (GG => A) ~> (GG' => A2) ~~> cc e
+
+
+C : (GG <= A) ~> (GG' => A1 -> A2) ~~> cc
+GG' |- ee2 <= A1 ~~> e
+----------------------------------------------- :: appL2
+C ee2 : (GG <= A) ~> (GG' => A2) ~~> cc e
+
+
+GG' |- ee1 => A1 -> A2 ~~> e
+C : (GG => A) ~> (GG' <= A1) ~~> cc
+-------------------------------------------- :: appR1
+ee1 C : (GG => A) ~> (GG' => A2) ~~> e cc
+
+
+GG' |- ee1 => A1 -> A2 ~~> e
+C : (GG <= A) ~> (GG' <= A1) ~~> cc
+----------------------------------------- :: appR2
+ee1 C : (GG <= A) ~> (GG' => A2) ~~> e cc
+
+
+
+C : (GG => A) ~> (GG' => A1) ~~> cc
+GG' |- ee2 => A2 ~~> e
+A1 ** A2
+---------------------------------------------------------- :: mergeL1
+C ,, ee2 : (GG => A) ~> (GG' => A1 & A2) ~~> < cc , e >
+
+
+C : (GG <= A) ~> (GG' => A1) ~~> cc
+GG' |- ee2 => A2 ~~> e
+A1 ** A2
+-------------------------------------------------------- :: mergeL2
+C ,, ee2 : (GG <= A) ~> (GG' => A1 & A2) ~~> < cc , e >
+
+
+
+GG' |- ee1 => A1 ~~> e
+C : (GG => A) ~> (GG' => A2) ~~> cc
+A1 ** A2
+------------------------------------------------------ :: mergeR1
+ee1 ,, C : (GG => A) ~> (GG' => A1 & A2) ~~> < e , cc >
+
+
+GG' |- ee1 => A1 ~~> e
+C : (GG <= A) ~> (GG' => A2) ~~> cc
+A1 ** A2
+------------------------------------------------------ :: mergeR2
+ee1 ,, C : (GG <= A) ~> (GG' => A1 & A2) ~~> < e , cc >
+
+
+
+
+C : (GG => A) ~> (GG' => B) ~~> cc
+---------------------------------------------------- :: rcd1
+{ l = C } : (GG => A) ~> (GG' => { l : B }) ~~> {l = cc}
+
+
+C : (GG <= A) ~> (GG' => B) ~~> cc
+---------------------------------------------------- :: rcd2
+{ l = C } : (GG <= A) ~> (GG' => { l : B }) ~~> {l = cc}
+
+
+
+C : (GG => A) ~> (GG' => { l : B }) ~~> cc
+-------------------------------------------- :: proj1
+C.l : (GG => A) ~> (GG' => B) ~~> cc.l
+
+
+C : (GG <= A) ~> (GG' => { l : B }) ~~> cc
+-------------------------------------------- :: proj2
+C.l : (GG <= A) ~> (GG' => B) ~~> cc.l
+
+
+C : (GG => B) ~> (GG' <= A) ~~> cc
+------------------------------------------ :: anno1
+C : A : (GG => B) ~> (GG' => A) ~~> cc
+
+
+C : (GG <= B) ~> (GG' <= A) ~~> cc
+---------------------------------------- :: anno2
+C : A : (GG <= B) ~> (GG' => A) ~~> cc
+
+
+
+C : (GG => A) ~> (GG', x : A1 <= A2) ~~> cc
+x notin dom GG'
+------------------------------------------------------- :: abs1
+\ x . C : (GG => A) ~> (GG' <= A1 -> A2) ~~> \x . cc
+
+
+C : (GG <= A) ~> (GG', x : A1 <= A2) ~~> cc
+x notin dom GG'
+------------------------------------------------------- :: abs2
+\ x . C : (GG <= A) ~> (GG' <= A1 -> A2) ~~> \x . cc

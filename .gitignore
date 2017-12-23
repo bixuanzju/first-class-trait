@@ -4,6 +4,10 @@
 **/auto
 bundle.tar.gz
 
+*.v.d
+*.vio
+*.vo
+*.v-e
 *.vrb
 *.aux
 *.bbl
@@ -12,21 +16,3 @@ bundle.tar.gz
 *.fls
 *.log
 *.tex-old
-/OOPSLA2017/doc/sections/applications.tex
-/OOPSLA2017/doc/sections/desugar.tex
-/OOPSLA2017/doc/sections/miniJS.ott.tex
-/OOPSLA2017/doc/sections/traits.tex
-/OOPSLA2017/doc/paper.pdf
-/ECOOP2018/doc/note.synctex.gz
-/ECOOP2018/doc/ott-rules.tex
-/ECOOP2018/doc/note.tex
-/ECOOP2018/doc/note.pdf
-/ECOOP2018/doc/footempfile.txt
-/ECOOP2018/doc/paper.pdf
-/ECOOP2018/doc/paper.synctex.gz
-/ECOOP2018/doc/paper.vtc
-/ECOOP2018/doc/sections/miniJS.ott.tex
-/ECOOP2018/doc/sections/applications.mng
-/ECOOP2018/doc/sections/desugar.mng
-/ECOOP2018/doc/sections/typesystem.mng
-/ECOOP2018/doc/appendix.mng
