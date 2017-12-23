@@ -1,0 +1,100 @@
+:q
+main = 1
+1
+:load expression_problem.sl 
+:q
+:load point.sl 
+:q
+:load point.sl 
+:q
+:load point.sl 
+:q
+:load point.sl 
+:q
+cd /Users/jeremybi/scratch/
+:load playground.sl 
+:load playground.sl 
+:reset 
+:load playground.sl 
+:load playground.sl 
+:debug 
+:load playground.sl 
+:q
+:q
+:load playground.sl 
+:debug 
+:load playground.sl 
+:load point.sl 
+:load playground.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+cd /Users/jeremybi/Projects/disjoint-polymorphism/impl/examples/
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:load point.sl 
+:q
+:load playground.sl 
+:load point.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {dog : String}))) = x : {dog : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_map : String}))) = x : {toggle_map : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : {toggle_mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_map : String}))) = x : {toogle_map : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle-map : String}))) = x : {toogle-map : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_map : String}))) = x : {dog : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {dog : String}))) = x : {dog : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {dog : String}))) = x : {mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String})))) = x : {mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : {mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : {on_key : Top}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : {toggle_mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : {mode : String} & {toggle_mode : String}
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : Top
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : Top}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : Top})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : Top}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : Top})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : (((({on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+:load playground.sl 
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+:q
+:load playground.sl 
+:load expression.sl 
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : Top & {on_key : Top} & {on_paint : Top} & {printVersion : (Top -> String)} & {version : String} & {mode : String} & {toogle_mode : String}) = x : {version : String} & {on_key : Top} & {on_paint : Top} & {printVersion : (Top -> String)} & ({mode : String} & {toggle_mode : String})
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+def (x : ((((Top & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & (({version : String} & {mode : String}) & {toogle_mode : String}))) = x : ((({version : String} & {on_key : Top}) & {on_paint : Top}) & {printVersion : (Top -> String)}) & ({mode : String} & {toggle_mode : String})
+:load playground.sl 
+:q
+:q
+:q
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:load playground.sl 
+:q
+:load playground.sl 
+:q
+:load playground.sl 
+:q
+:load playground.sl 

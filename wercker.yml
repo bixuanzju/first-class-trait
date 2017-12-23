@@ -1,0 +1,17 @@
+box: debian
+build:
+  steps:
+    - script:
+      name: setup
+      code: |
+        export PATH=~/.local/bin:$PATH
+        mkdir -p ~/.local/bin
+        apt-get update
+        apt-get install -y curl xz-utils make gcc libgmp-dev libncurses5-dev
+        curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+        chmod 755 ~/.local/bin/stack
+        stack --no-terminal --skip-ghc-check setup
+    - script:
+      name: test
+      code: |
+          stack --no-terminal --skip-ghc-check test
