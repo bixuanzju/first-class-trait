@@ -4,7 +4,7 @@
 type ExpAlg[E] = { lit : Int -> E, add : E -> E -> E };
 type IEval = { eval : Int };
 trait evalAlg => {
-  lit (x : Int)            = { eval = x };
+  lit (x : Int) = { eval = x };
   add (x : IEval) (y : IEval) = { eval = x.eval + y.eval }
 };
 -- END_ALGEBRA_DEF
@@ -21,7 +21,7 @@ e1 : Exp = { accept E f = f.add (f.lit 2) (f.lit 3) };
 -- BEGIN_PRINT_DEF
 type IPrint = { print : String };
 trait printAlg => {
-  lit (x : Int)              = { print = x.toString };
+  lit (x : Int) = { print = x.toString };
   add (x : IPrint) (y : IPrint) = {
     print = "(" ++ x.print ++ " + " ++ y.print ++ ")"
   }
