@@ -1,3 +1,7 @@
+all: build run
+
+run:
+	@stack exec SEDEL-exe
 
 build:
 	@stack build
@@ -11,7 +15,4 @@ test:
 clean:
 	@stack clean
 
-coq:
-	@make -C coq
-
-.PHONY: all build test run clean doc install
+.PHONY: all build test run clean install

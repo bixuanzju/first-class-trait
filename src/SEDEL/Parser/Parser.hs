@@ -1,6 +1,7 @@
 module SEDEL.Parser.Parser (parseModule) where
 
 import           Control.Arrow (first, second)
+import           Data.Functor (($>))
 import           Data.List (foldl', foldl1')
 import           Data.Maybe (fromMaybe, isJust)
 import           Data.Scientific (toRealFloat)
@@ -154,7 +155,7 @@ rmOperator = do
 atom :: Parser Expr
 atom =
   choice
-    [ pLambda
+    [ try pLambda <|> pLambda2
     , pBLambda
     , pLetrec
     , pLet
@@ -176,9 +177,9 @@ record = braces (mkRecds' <$> sepBy1 tmBind comma)
 bconst :: Parser Expr
 bconst =
   choice
-    [ rword "true" *> pure (BoolV True)
-    , rword "false" *> pure (BoolV False)
-    , rword "undefined" *> pure Bot
+    [ rword "true" $> BoolV True
+    , rword "false" $> BoolV False
+    , rword "undefined" $> Bot
     ]
 
 pLambda :: Parser Expr
@@ -188,6 +189,17 @@ pLambda = do
   symbol "->"
   e <- expr
   return $ foldr elam (elam (last xs) e) (init xs)
+
+-- Annotated lambdas
+pLambda2 :: Parser Expr
+pLambda2 = do
+  symbol "\\"
+  xs <- parens tparam
+  symbol "->"
+  e <- expr
+  return $ elam2  xs e
+
+
 
 pBLambda :: Parser Expr
 pBLambda = do
@@ -330,7 +342,7 @@ traitType = do
   rword "Trait"
   ts <- tyList
   if length ts == 1
-    then return $ Arr (head ts) (head ts)
+    then return $ Arr TopT (head ts)
     else return $ foldl1' Arr ts
 
 recordType :: Parser Type
@@ -339,10 +351,11 @@ recordType = braces (mkRecdsT <$> sepBy1 tparam comma)
 tconst :: Parser Type
 tconst =
   choice
-    [ rword "Double" *> pure NumT
-    , rword "String" *> pure StringT
-    , rword "Bool" *> pure BoolT
-    , rword "Top" *> pure TopT
+    [ rword "Double" $> NumT
+    , rword "Int" $> NumT
+    , rword "String" $> StringT
+    , rword "Bool" $> BoolT
+    , rword "Top" $> TopT
     ]
 
 
@@ -378,7 +391,7 @@ param :: Parser (String, Maybe Type)
 param =
   choice
     [ (lidentifier <|> symbol "_") >>= \n -> return (n, Nothing)
-    , parens $ tparam >>= pure . second Just
+    , parens $ second Just <$> tparam
     ]
 
 
@@ -483,6 +496,7 @@ rws =
   , "inherits"
   , "undefined"
   , "Double"
+  , "Int"
   , "String"
   , "Bool"
   , "true"

@@ -2,14 +2,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module SEDEL.Source.Subtyping
   ( subtype
   ) where
 
 
-import           Data.Sequence ((|>), ViewL(..))
+import           Data.Sequence ((|>), Seq(..))
 import qualified Data.Sequence as Q
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import           Data.Text.Prettyprint.Doc ((<+>))
@@ -79,17 +78,17 @@ coDist = T.elam "x" (T.elam "y" $ T.UPair
 ----------------------------
 
 -}
-calTop :: Q.Seq L -> Co
-calTop (Q.null -> True) = coTop1
-calTop (Q.viewl -> LLa _ :< fs) = coTrans (calTop fs) coId
-calTop (Q.viewl -> LTy _ :< fs) =
+calTop :: Seq L -> Co
+calTop Empty = coTop1
+calTop (LLa _ :<| fs) = coTrans (calTop fs) coId
+calTop (LTy _ :<| fs) =
   coTrans (coArr coId (calTop fs)) (coTrans (coArr coTop1 coTop1) (coTrans coTop2 coTop1))
 calTop _ = panic "Impossible happened in calTop"
 
-calAnd :: Q.Seq L -> Co
-calAnd (Q.null -> True) = coId
-calAnd (Q.viewl -> LLa _ :< fs) = coTrans (calAnd fs) coId
-calAnd (Q.viewl -> LTy _ :< fs) = coTrans (coArr coId (calAnd fs)) coDist
+calAnd :: Seq L -> Co
+calAnd Empty = coId
+calAnd (LLa _ :<| fs) = coTrans (calAnd fs) coId
+calAnd (LTy _ :<| fs) = coTrans (coArr coId (calAnd fs)) coDist
 calAnd _ = panic "Impossible happened in calAnd"
 
 
@@ -104,13 +103,6 @@ Subtyping (<:) is defined only between types of kind *.
 
 WARN: They must be expanded first
 
-How to remove the warning?
-
-> Pattern match checker exceeded (2000000) iterations in
-> an equation for ‘subtypeS’. (Use -fmax-pmcheck-iterations=n
-> to set the maximun number of iterations to n)
-
-
 -}
 subtype :: Ctx -> Type -> Type -> Either FDoc T.UExpr
 subtype ctx st tt = runExcept $ runFreshMT go
@@ -122,18 +114,18 @@ subtype ctx st tt = runExcept $ runFreshMT go
       subtypeS Q.empty a b
     subtypeS :: Q.Seq L -> Type -> Type -> (FreshMT (Except FDoc)) T.UExpr
     -- Base cases
-    subtypeS (Q.null -> True) NumT NumT = return coId
-    subtypeS (Q.null -> True) BoolT BoolT = return coId
-    subtypeS (Q.null -> True) StringT StringT = return coId
+    subtypeS Empty NumT NumT = return coId
+    subtypeS Empty BoolT BoolT = return coId
+    subtypeS Empty StringT StringT = return coId
     subtypeS fs _ TopT = return $ coTrans (calTop fs) coTop1
-    subtypeS (Q.null -> True) (TVar a) (TVar b) =
+    subtypeS Empty (TVar a) (TVar b) =
       if a /= b
         then throwError $
              "variables not equal:" <+>
              Pretty.squotes (Pretty.pretty a) <+>
              "and" <+> Pretty.squotes (Pretty.pretty b)
         else return coId
-    subtypeS (Q.null -> True) (DForall t1) (DForall t2) =
+    subtypeS Empty (DForall t1) (DForall t2) =
       unbind2 t1 t2 >>= \case
         Just ((_, Embed a1), b1, (_, Embed a2), b2) ->
           subtypeS Q.empty a2 a1 >> subtypeS Q.empty b1 b2
@@ -147,11 +139,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
             c <- subtypeS fs a2 NumT
             return $ coTrans c coProj2
       c1 `catchError` const c2
-    subtypeS (Q.viewl -> LTy a :< fs) (Arr a1 a2) NumT = do
+    subtypeS (LTy a :<| fs) (Arr a1 a2) NumT = do
       c1 <- subtypeS Q.empty a a1
       c2 <- subtypeS fs a2 NumT
       return $ coArr c1 c2
-    subtypeS (Q.viewl -> LLa l :< fs) (SRecT l' a) NumT =
+    subtypeS (LLa l :<| fs) (SRecT l' a) NumT =
       if l == l'
         then subtypeS fs a NumT
         else throwError $
@@ -167,11 +159,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
             c <- subtypeS fs a2 BoolT
             return $ coTrans c coProj2
       c1 `catchError` const c2
-    subtypeS (Q.viewl -> LTy a :< fs) (Arr a1 a2) BoolT = do
+    subtypeS (LTy a :<| fs) (Arr a1 a2) BoolT = do
       c1 <- subtypeS Q.empty a a1
       c2 <- subtypeS fs a2 BoolT
       return $ coArr c1 c2
-    subtypeS (Q.viewl -> LLa l :< fs) (SRecT l' a) BoolT =
+    subtypeS (LLa l :<| fs) (SRecT l' a) BoolT =
       if l == l'
         then subtypeS fs a BoolT
         else throwError $
@@ -186,11 +178,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
             c <- subtypeS fs a2 StringT
             return $ coTrans c coProj2
       c1 `catchError` const c2
-    subtypeS (Q.viewl -> LTy a :< fs) (Arr a1 a2) StringT = do
+    subtypeS (LTy a :<| fs) (Arr a1 a2) StringT = do
       c1 <- subtypeS Q.empty a a1
       c2 <- subtypeS fs a2 StringT
       return $ coArr c1 c2
-    subtypeS (Q.viewl -> LLa l :< fs) (SRecT l' a) StringT =
+    subtypeS (LLa l :<| fs) (SRecT l' a) StringT =
       if l == l'
         then subtypeS fs a StringT
         else throwError $
@@ -206,11 +198,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
             c <- subtypeS fs a2 (TVar x)
             return $ coTrans c coProj2
       c1 `catchError` const c2
-    subtypeS (Q.viewl -> LTy a :< fs) (Arr a1 a2) (TVar x) = do
+    subtypeS (LTy a :<| fs) (Arr a1 a2) (TVar x) = do
       c1 <- subtypeS Q.empty a a1
       c2 <- subtypeS fs a2 (TVar x)
       return $ coArr c1 c2
-    subtypeS (Q.viewl -> LLa l :< fs) (SRecT l' a) (TVar x) =
+    subtypeS (LLa l :<| fs) (SRecT l' a) (TVar x) =
       if l == l'
         then subtypeS fs a (TVar x)
         else throwError $
@@ -226,11 +218,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
             c <- subtypeS fs a2 (DForall t)
             return $ coTrans c coProj2
       c1 `catchError` const c2
-    subtypeS (Q.viewl -> LTy a :< fs) (Arr a1 a2) (DForall t) = do
+    subtypeS (LTy a :<| fs) (Arr a1 a2) (DForall t) = do
       c1 <- subtypeS Q.empty a a1
       c2 <- subtypeS fs a2 (DForall t)
       return $ coArr c1 c2
-    subtypeS (Q.viewl -> LLa l :< fs) (SRecT l' a) (DForall t) =
+    subtypeS (LLa l :<| fs) (SRecT l' a) (DForall t) =
       if l == l'
         then subtypeS fs a (DForall t)
         else throwError $

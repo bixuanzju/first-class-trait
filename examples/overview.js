@@ -2,14 +2,23 @@ class Editor {
     onKey(key) {
         return "Pressing " + key;
     }
-    showHelp() {
-        // abstract method "version"
-        // in Java, we would need abstract version() {...}
-        return  "Version: " + this.version() + " Basic usgae...";
-    }
-    // dynamic dispatch
     doCut() {
-        return this.onKey("C-x") + " for cutting texts";
+        return this.onKey("C-x") + " for cutting text";
+    }
+    showHelp() {
+        return  "Version: " + this.version() + " Basic usage...";
+    }
+};
+
+
+const spellMixin = Base => {
+    return class extends Base {
+        check() {
+            return super.onKey("C-c") + " for spell checking";
+        }
+        onKey(key) {
+            return "Process " + key + " on spell editor";
+        }
     }
 };
 
@@ -21,49 +30,23 @@ const modalMixin = Base => {
             super();
             this.mode = "command";
         }
-        version() {
-            return 0.1;
-        }
         toggleMode() {
             return "toggle succeeded from " + this.mode;
+        }
+        onKey(key) {
+            return "Process " + key + " on modal editor";
         }
     };
 };
 
 
 // Multiple inheritance using mixins
-class ModalEditor extends modalMixin(Editor) {
-    // conflicting method
-    version() {
-        return 0.2;
-    }
-    // overridden method (using super)
-    onKey(key) {
-        return super.onKey(key) + " on modal editor";
-    }
+class ModalEditor extends modalMixin(spellMixin(Editor)) {
+   version() {
+       return 0.2;
+   }
 }
 
-const editor = new Editor();
+const editor = new ModalEditor();
 
-const editor1 = new ModalEditor();
-
-const editor2 = new ModalEditor();
-
-console.log(editor2.doCut())
-
-
-// const lineNumMixin = Base => {
-//     return class extends Base {
-//         // conflicting method
-//         version() {
-//             return 0.2;
-//         }
-//         // overridden method (using super)
-//         onKey(key) {
-//             return super.onKey(key) + " on line editor";
-//         }
-//     };
-// };
-
-// need to resolve conflict here
-// const LineModalEditor = lineNumMixin(modalMixin(Editor));
+console.log(editor.doCut())

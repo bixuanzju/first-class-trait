@@ -25,6 +25,10 @@ ebind n = bind (s2n n)
 elam :: String -> Expr -> Expr
 elam b e = Lam (ebind b e)
 
+
+elam2 :: (String, Type) -> Expr -> Expr
+elam2 (x, t) e = LamA (bind (s2n x, embed t) e)
+
 dlam :: (String, Type) -> Expr -> Expr
 dlam (s, t) b = DLam (bind (s2n s, embed t) b)
 
