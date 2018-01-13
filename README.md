@@ -1,6 +1,6 @@
 # SEDEL
 
-## Paper with appendix
+## Paper with Appendix
 
 [paper-appendix.pdf](paper-appendix.pdf)
 
