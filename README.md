@@ -57,7 +57,7 @@ Like Haskell, a line comment starts with `--` and a comment block is wrapped by
 * Disjoint (universal) quantification: `forall (A*Int) . A -> A`
 * Term declaration: `id A (x : A) = x`
 * Type declaration: `type Person = {name : String, male : Bool}`
-
+* Traits: `trait [self : Person] => { age = 42 }`
 
 
 ## Examples and Case Study
