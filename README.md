@@ -15,13 +15,13 @@ This project can be built with
 cabal sandbox init
 cabal install --only-dependencies
 cabal build
-cabal exec SEDEL-exe
+cabal exec sedel-exe
 ```
 
 * stack
 ```
 stack build
-stack exec SEDEL-exe
+stack exec sedel-exe
 ```
 
 ## REPL
