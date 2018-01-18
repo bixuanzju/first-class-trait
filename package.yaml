@@ -1,6 +1,6 @@
-name: SEDEL
+name: sedel
 version: 0.1.0.0
-synopsis: A prototype-based, statically typed language
+synopsis: type system for first-class traits
 description: Please see README.md
 category: Language
 author: Anonymous
@@ -8,7 +8,6 @@ maintainer: anonymous@gmail.com
 copyright: 2016-2017, Anonymous
 license: BSD3
 dependencies:
-  - ansi-wl-pprint
   - base >=4.7 && <5
   - mtl
   - haskeline
@@ -49,7 +48,7 @@ library:
     - unbound-generics
 
 executables:
-  sedel:
+  sedel-exe:
     main: Main.hs
     source-dirs: app
     ghc-options:
@@ -57,10 +56,10 @@ executables:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - SEDEL
+      - sedel
 
 tests:
-  SEDEL-test:
+  sedel-test:
     main: Spec.hs
     source-dirs: test
     ghc-options:
@@ -70,4 +69,4 @@ tests:
     dependencies:
       - tasty >=0.11.1
       - tasty-hspec >=1.1.3.1
-      - SEDEL
+      - sedel
