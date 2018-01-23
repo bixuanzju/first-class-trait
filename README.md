@@ -24,6 +24,13 @@ stack build
 stack exec sedel-exe
 ```
 
+* nix
+```
+nix-build
+./result/bin/sedel-exe
+```
+
+
 ## REPL
 
 The REPL prompt is `>`:
