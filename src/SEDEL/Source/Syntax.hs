@@ -28,9 +28,9 @@ data SDecl
 type RawName = String
 
 data Trait = TraitDef
-  { selfType      :: (RawName, Type)
+  { selfType      :: (RawName, SType)
   , traitSuper    :: [Expr]
-  , retType       :: Maybe Type
+  , retType       :: Maybe SType
   , traitBody     :: [TmBind]
   } deriving (Show, Generic)
 
@@ -39,10 +39,10 @@ data Trait = TraitDef
 -- If t is provided, then e can mention f
 data TmBind = TmBind
   { bindName            :: RawName                   -- f
-  , bindTyParams        :: [(TyName, Type)]          -- A1, ..., An
-  , bindParams          :: [(TmName, Maybe Type)]    -- x1: t1, ..., xn: tn
+  , bindTyParams        :: [(TyName, SType)]          -- A1, ..., An
+  , bindParams          :: [(TmName, Maybe SType)]    -- x1: t1, ..., xn: tn
   , bindRhs             :: Expr                      -- e
-  , bindRhsTyAscription :: Maybe Type                -- t
+  , bindRhsTyAscription :: Maybe SType                -- t
   , isOverride          :: Bool
   } deriving (Show, Generic)
 
@@ -50,25 +50,25 @@ data TmBind = TmBind
 data TypeBind = TypeBind
   { typeBindName   :: RawName            -- T
   , typeBindParams :: [(TyName, Kind)]   -- A1, ..., An
-  , typeBindRhs    :: Type               -- t
+  , typeBindRhs    :: SType               -- t
   } deriving (Show, Generic)
 
 
 type TmName = Name Expr
-type TyName = Name Type
+type TyName = Name SType
 
 -- Expression
-data Expr = Anno Expr Type
+data Expr = Anno Expr SType
           | Var TmName
           | App Expr Expr
           | Lam (Bind TmName Expr)
-          | Letrec (Bind (TmName, Embed (Maybe Type)) (Expr, Expr))
+          | Letrec (Bind (TmName, Embed (Maybe SType)) (Expr, Expr))
             -- ^ let expression, possibly recursive
-          | DLam (Bind (TyName, Embed Type) Expr)
-          | TApp Expr Type
+          | DLam (Bind (TyName, Embed SType) Expr)
+          | TApp Expr SType
           | DRec Label Expr
           | Acc Expr Label
-          | Remove Expr Label (Maybe Type)
+          | Remove Expr Label (Maybe SType)
           | Merge Expr Expr
           | LitV Double
           | BoolV Bool
@@ -79,7 +79,7 @@ data Expr = Anno Expr Type
           -- practical matters for surface language
           | Pos SourcePos Expr
           -- ^ marked source position, for error messages
-          | LamA (Bind (TmName, Embed Type) Expr)
+          | LamA (Bind (TmName, Embed SType) Expr)
           -- ^ Not exposed to users, for internal use
           | Bot
           -- The following should disappear after desugaring
@@ -88,19 +88,19 @@ data Expr = Anno Expr Type
   deriving (Show, Generic)
 
 type Label = String
-data Type = NumT
+data SType = NumT
           | BoolT
           | StringT
-          | Arr Type Type
-          | And Type Type
+          | Arr SType SType
+          | And SType SType
           | TVar TyName
-          | DForall (Bind (TyName, Embed Type) Type)
-          | SRecT Label Type
+          | DForall (Bind (TyName, Embed SType) SType)
+          | SRecT Label SType
           | TopT
-          | OpAbs (Bind (TyName, Embed Kind) Type)
-          -- ^ Type-level abstraction: "type T A = t" becomes "type T = \A : *. t",
-          | OpApp Type Type
-          -- ^ Type-level application: t1 t2
+          | OpAbs (Bind (TyName, Embed Kind) SType)
+          -- ^ SType-level abstraction: "type T A = t" becomes "type T = \A : *. t",
+          | OpApp SType SType
+          -- ^ SType-level application: t1 t2
 
   deriving (Show, Generic)
 
@@ -116,7 +116,7 @@ instance Pretty (Name a) where
 
 $(makeClosedAlpha ''SourcePos)
 
-instance Alpha Type
+instance Alpha SType
 instance Alpha Expr
 instance Alpha Trait
 instance Alpha SDecl
@@ -129,7 +129,7 @@ instance Subst b SourcePos where
   subst _ _ = id
   substs _ = id
 
-instance Subst Expr Type
+instance Subst Expr SType
 instance Subst Expr Kind
 instance Subst Expr ArithOp
 instance Subst Expr LogicalOp
@@ -144,19 +144,19 @@ instance Subst Expr Expr where
   isvar (Var v) = Just (SubstName v)
   isvar _ = Nothing
 
-instance Subst Type Expr
-instance Subst Type Trait
-instance Subst Type Operation
-instance Subst Type LogicalOp
-instance Subst Type CompOp
-instance Subst Type ArithOp
-instance Subst Type SDecl
-instance Subst Type TmBind
-instance Subst Type TypeBind
-instance Subst Type Kind
+instance Subst SType Expr
+instance Subst SType Trait
+instance Subst SType Operation
+instance Subst SType LogicalOp
+instance Subst SType CompOp
+instance Subst SType ArithOp
+instance Subst SType SDecl
+instance Subst SType TmBind
+instance Subst SType TypeBind
+instance Subst SType Kind
 
 
-instance Subst Type Type where
+instance Subst SType SType where
   isvar (TVar v) = Just (SubstName v)
   isvar _ = Nothing
 

@@ -26,14 +26,14 @@ module SEDEL.Environment
 
 
 import qualified Data.Map.Strict as M
-import qualified Data.Text.Prettyprint.Doc as Pretty
 import           Data.Text.Prettyprint.Doc ((<+>))
+import qualified Data.Text.Prettyprint.Doc as Pretty
 import           Protolude
-import           Unbound.Generics.LocallyNameless
 import           Text.Megaparsec
+import           Unbound.Generics.LocallyNameless
 
 import           SEDEL.Source.Syntax
-import SEDEL.PrettyPrint
+import           SEDEL.PrettyPrint
 
 type TcMonad = FreshMT (ReaderT Ctx (ExceptT Err IO))
 
@@ -45,13 +45,13 @@ runTcMonad env m = runExceptT $ runReaderT (runFreshMT m) env
 data TypeValue
   = TerminalType
   -- ^ Terminal types, e.g., the `a` of `forall a. `
-  | NonTerminalType Type
-    -- ^ Non-terminal types, i.e. type synoyms. `Type` holds the RHS to the
+  | NonTerminalType SType
+    -- ^ Non-terminal types, i.e. type synoyms. `SType` holds the RHS to the
     -- equal sign of type synonym definitions.
 
-type VarCtx = M.Map TmName Type
+type VarCtx = M.Map TmName SType
 type BndCtx = M.Map TmName Expr
-type TyCtx = M.Map TyName (Kind, Type, TypeValue)
+type TyCtx = M.Map TyName (Kind, SType, TypeValue)
 
 -- | Environment manipulation and accessing functions
 data Ctx = Ctx
@@ -86,27 +86,27 @@ ctxMap f1 f2 f3 ctx =
   }
 
 
-extendVarCtx :: TmName -> Type -> Ctx -> Ctx
+extendVarCtx :: TmName -> SType -> Ctx -> Ctx
 extendVarCtx v t = ctxMap (M.insert v t) identity identity
 
 extendTVarCtx :: TyName -> Kind -> Ctx -> Ctx
 extendTVarCtx v k = ctxMap identity (M.insert v (k, TopT, TerminalType)) identity
 
-extendConstrainedTVarCtx :: TyName -> Type -> Ctx -> Ctx
+extendConstrainedTVarCtx :: TyName -> SType -> Ctx -> Ctx
 extendConstrainedTVarCtx v t = ctxMap identity (M.insert v (Star, t, TerminalType)) identity
 
-extendVarCtxs :: [(TmName, Type)] -> Ctx -> Ctx
+extendVarCtxs :: [(TmName, SType)] -> Ctx -> Ctx
 extendVarCtxs = flip $ foldr (uncurry extendVarCtx)
 
-addTypeSynonym :: TyName -> Type -> Kind -> Ctx -> Ctx
+addTypeSynonym :: TyName -> SType -> Kind -> Ctx -> Ctx
 addTypeSynonym v t k = ctxMap identity (M.insert v (k, t, NonTerminalType t)) identity
 
-addTypeSynonyms :: [(TyName, Type, Kind)] -> Ctx -> Ctx
+addTypeSynonyms :: [(TyName, SType, Kind)] -> Ctx -> Ctx
 addTypeSynonyms = flip $ foldr (\(v, t, k) ctx -> addTypeSynonym v t k ctx)
 
 lookupVarTy
   :: (MonadReader Ctx m, MonadError Err m)
-  => TmName -> m Type
+  => TmName -> m SType
 lookupVarTy v = do
   env <- asks varCtx
   case M.lookup v env of
@@ -115,7 +115,7 @@ lookupVarTy v = do
 
 lookupTVarConstraint
   :: (MonadReader Ctx m, MonadError Err m)
-  => TyName -> m Type
+  => TyName -> m SType
 lookupTVarConstraint v = do
   env <- asks tyCtx
   case M.lookup v env of
@@ -125,11 +125,11 @@ lookupTVarConstraint v = do
 lookupTVarKindMaybe :: Ctx -> TyName -> Maybe Kind
 lookupTVarKindMaybe ctx v =  (\(k, _, _) -> k) <$> M.lookup v (tyCtx ctx)
 
-lookupTVarConstraintMaybe :: Ctx -> TyName -> Maybe Type
+lookupTVarConstraintMaybe :: Ctx -> TyName -> Maybe SType
 lookupTVarConstraintMaybe ctx v =
   (\(_, t, _) -> t) <$> M.lookup v (tyCtx ctx)
 
-lookupTVarSynMaybe :: Ctx -> TyName -> Maybe Type
+lookupTVarSynMaybe :: Ctx -> TyName -> Maybe SType
 lookupTVarSynMaybe ctx v =
   case (\(_, _, t) -> t) <$> M.lookup v (tyCtx ctx) of
     Nothing -> Nothing

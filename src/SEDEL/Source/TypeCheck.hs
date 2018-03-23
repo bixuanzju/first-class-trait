@@ -22,8 +22,8 @@ import qualified SEDEL.Target.Syntax as T
 import           SEDEL.Util
 
 
--- Type check a module
-tcModule :: Module -> TcMonad (Type, T.UExpr)
+-- SType check a module
+tcModule :: Module -> TcMonad (SType, T.UExpr)
 tcModule m = do
   let decls = moduleEntries m
   let (DefDecl mainE) = mainExpr m
@@ -34,7 +34,7 @@ tcModule m = do
   (ty, target) <- tcM sdecls main
   return (ty, target)
   where
-    tcM :: [SDecl] -> TmBind -> TcMonad (Type, T.UExpr)
+    tcM :: [SDecl] -> TmBind -> TcMonad (SType, T.UExpr)
     tcM [] main = do
       (dbind, (_, e)) <- tcTmDecl main
       return (snd dbind, e)
@@ -46,8 +46,8 @@ tcModule m = do
       (n, tdef, k) <- tcTyDecl tdecl
       localCtx (addTypeSynonym n tdef k) (tcM xs main)
 
--- Type check declarations
-tcTmDecl :: TmBind -> TcMonad ((TmName, Type), (T.UName, T.UExpr))
+-- SType check declarations
+tcTmDecl :: TmBind -> TcMonad ((TmName, SType), (T.UName, T.UExpr))
 tcTmDecl decl =
   lookupTmDef (s2n n) >>= \case
     Nothing -> do
@@ -57,13 +57,13 @@ tcTmDecl decl =
   where
     (n, term) = normalizeTmDecl decl -- term has been annotated, so we can infer
 
-tcTyDecl :: TypeBind -> TcMonad (TyName, Type, Kind)
+tcTyDecl :: TypeBind -> TcMonad (TyName, SType, Kind)
 tcTyDecl (TypeBind n params rhs) = do
   let typDef = pullRight params rhs
   return (s2n n, typDef, Star)
 
 -- | Kinding.
-kind :: Fresh m => Ctx -> Type -> m (Maybe Kind)
+kind :: Fresh m => Ctx -> SType -> m (Maybe Kind)
 kind d (TVar a) = return $ lookupTVarKindMaybe d a
 kind _ NumT = return $ Just Star
 kind _ BoolT = return $ Just Star
@@ -103,14 +103,14 @@ kind d (OpApp t1 t2) = do
 
 
 
-justStarIffAllHaveKindStar :: Fresh m => Ctx -> [Type] -> m (Maybe Kind)
+justStarIffAllHaveKindStar :: Fresh m => Ctx -> [SType] -> m (Maybe Kind)
 justStarIffAllHaveKindStar d ts = do
   ps <- mapM (hasKindStar d) ts
   if and ps
     then return $ Just Star
     else return Nothing
 
-hasKindStar :: Fresh m => Ctx -> Type -> m Bool
+hasKindStar :: Fresh m => Ctx -> SType -> m Bool
 hasKindStar d t = do
   k <- kind d t
   return (k == Just Star)
@@ -120,7 +120,7 @@ hasKindStar d t = do
 -- | "Pull" the type params at the LHS of the equal sign to the right.
 -- A (high-level) example:
 --   A B t  ->  \A. \B. t
-pullRight :: [(TyName, Kind)] -> Type -> Type
+pullRight :: [(TyName, Kind)] -> SType -> SType
 pullRight params t = foldr (\(n, k) t' -> OpAbs (bind (n, embed k) t')) t params
 
 
@@ -131,7 +131,7 @@ pullRight params t = foldr (\(n, k) t' -> OpAbs (bind (n, embed k) t')) t params
 -- Γ ⊢ e ⇒ A ~> E
 ---------------------------
 
-infer :: Expr -> TcMonad (Type, T.UExpr)
+infer :: Expr -> TcMonad (SType, T.UExpr)
 
 {- |
 
@@ -210,7 +210,7 @@ infer (TApp e a) = do
       ((x, Embed b), c) <- unbind t'
       disjoint ctx (expandType ctx a) (expandType ctx b)
       return (subst x a c, e')
-    _ -> errThrow [DS "Type application mismatch"]
+    _ -> errThrow [DS "SType application mismatch"]
       -- throwError
       --   (Pretty.hang 2 $
       --    "type of application mismatch in" <+>
@@ -434,7 +434,7 @@ infer a = errThrow [DS "Infer not implemented:", DD a]
 -- Γ ⊢ e ⇐ A ~> E
 ------------------------
 
-tcheck :: Expr -> Type -> TcMonad T.UExpr
+tcheck :: Expr -> SType -> TcMonad T.UExpr
 
 {- |
 
@@ -520,7 +520,7 @@ A <: B ~> c
 tcheck e b = checkMode e b
 
 
-checkMode :: Expr -> Type -> TcMonad T.UExpr
+checkMode :: Expr -> SType -> TcMonad T.UExpr
 checkMode e b = do
   wf b
   (a, e') <- infer e
@@ -532,7 +532,7 @@ checkMode e b = do
 
 
 -- | Check that a (expanded) type is well-formed
-wf :: Type -> TcMonad ()
+wf :: SType -> TcMonad ()
 wf ty = do
   ctx <- askCtx
   let t' = expandType ctx ty
@@ -578,7 +578,7 @@ affects the disjointess relation
 
 -}
 
-disjoint :: Ctx -> Type -> Type -> TcMonad ()
+disjoint :: Ctx -> SType -> SType -> TcMonad ()
 disjoint _ TopT _ = return ()
 disjoint _ _ TopT = return ()
 
@@ -591,7 +591,7 @@ disjoint ctx b (TVar x)
 disjoint _ (TVar x) (TVar y) =
   errThrow
     [ DS $
-      "Type variables" <+>
+      "SType variables" <+>
       Pretty.pretty x <+> "and" <+> Pretty.pretty y <+> "are not disjoint"
     ]
 
@@ -627,11 +627,11 @@ disjoint _ a b =
     ]
 
 
-disjointAx :: Type -> Type -> Bool
+disjointAx :: SType -> SType -> Bool
 disjointAx t1 t2 =
   type2num t1 < 6 && type2num t2 < 6 && type2num t1 /= type2num t2
   where
-    type2num :: Type -> Int
+    type2num :: SType -> Int
     type2num NumT = 0
     type2num BoolT = 1
     type2num StringT = 2
@@ -655,16 +655,16 @@ disjointAx t1 t2 =
 
 -- | Select a label l from t
 -- Return a list of possible types with their projections
-select :: Type -> Label -> [(Type, T.UExpr)]
+select :: SType -> Label -> [(SType, T.UExpr)]
 select t l =
   fromMaybe [] (M.lookup l m)
   where
     m = recordFields t
 
-recordFields :: Type -> Map Label [(Type, T.UExpr)]
+recordFields :: SType -> Map Label [(SType, T.UExpr)]
 recordFields = go identity
   where
-    go :: (T.UExpr -> T.UExpr) -> Type -> Map Label [(Type, T.UExpr)]
+    go :: (T.UExpr -> T.UExpr) -> SType -> Map Label [(SType, T.UExpr)]
     go cont (And t1 t2) =
       M.unionWith (++) (go (T.UP1 . cont) t1) (go (T.UP2 . cont) t2)
     go cont (SRecT l' t') =
@@ -676,7 +676,7 @@ recordFields = go identity
 -- τ1 \ l = τ2 ~> C
 ----------------------
 
-restrict :: Type -> Label -> Maybe Type -> Maybe (Type, T.UExpr)
+restrict :: SType -> Label -> Maybe SType -> Maybe (SType, T.UExpr)
 restrict t l lt = go t
   where
     go (SRecT l' t') = if l == l' && maybe True (`aeq` t') lt then Just (TopT, T.elam "x" T.UUnit) else Nothing

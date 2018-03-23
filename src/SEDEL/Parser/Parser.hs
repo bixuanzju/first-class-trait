@@ -229,7 +229,7 @@ pTrait = do
     , n)
 
 
-pSelf :: Parser (String, Type)
+pSelf :: Parser (String, SType)
 pSelf = do
   n <- lidentifier
   ret <- colon *> pType
@@ -311,10 +311,10 @@ pOperators =
 -- Types
 ------------------------------------------------------------------------
 
-pType :: Parser Type
+pType :: Parser SType
 pType = makeExprParser atype tOperators
 
-tOperators :: [[Operator Parser Type]]
+tOperators :: [[Operator Parser SType]]
 tOperators =
   [ [ Postfix
         (tyList >>= \xs ->
@@ -324,12 +324,12 @@ tOperators =
   , [InfixR (Arr <$ symbol "->")]
   ]
 
-atype :: Parser Type
+atype :: Parser SType
 atype =
   choice
     [pForall, traitType, tvar <$> uidentifier, recordType, tconst, parens pType]
 
-pForall :: Parser Type
+pForall :: Parser SType
 pForall = do
   rword "forall"
   xs <- some pCtyparam
@@ -337,7 +337,7 @@ pForall = do
   t <- pType
   return $ foldr tforall (tforall (last xs) t) (init xs)
 
-traitType :: Parser Type
+traitType :: Parser SType
 traitType = do
   rword "Trait"
   ts <- tyList
@@ -345,10 +345,10 @@ traitType = do
     then return $ Arr TopT (head ts)
     else return $ foldl1' Arr ts
 
-recordType :: Parser Type
+recordType :: Parser SType
 recordType = braces (mkRecdsT <$> sepBy1 tparam comma)
 
-tconst :: Parser Type
+tconst :: Parser SType
 tconst =
   choice
     [ rword "Double" $> NumT
@@ -365,7 +365,7 @@ tconst =
 
 
 -- [A,B,C]
-tyList :: Parser [Type]
+tyList :: Parser [SType]
 tyList = brackets $ sepBy1 pType comma
 
 -- [X, Y, Z]
@@ -379,7 +379,7 @@ pArgs :: Parser [Expr]
 pArgs = parens $ sepBy1 expr comma
 
 -- x : A
-tparam :: Parser (Label, Type)
+tparam :: Parser (Label, SType)
 tparam = do
   l <- lidentifier <|> symbol "_"
   colon
@@ -387,7 +387,7 @@ tparam = do
   return (l, e)
 
 -- (x : A) or x
-param :: Parser (String, Maybe Type)
+param :: Parser (String, Maybe SType)
 param =
   choice
     [ (lidentifier <|> symbol "_") >>= \n -> return (n, Nothing)
@@ -396,7 +396,7 @@ param =
 
 
 -- x * A
-constrainTy :: Parser (String, Type)
+constrainTy :: Parser (String, SType)
 constrainTy = do
   n <- uidentifier
   symbol "*"
@@ -404,7 +404,7 @@ constrainTy = do
   return (n, t)
 
 -- (x * A) or X
-pCtyparam :: Parser (String, Type)
+pCtyparam :: Parser (String, SType)
 pCtyparam =
   choice
     [ do n <- uidentifier
@@ -413,7 +413,7 @@ pCtyparam =
     ]
 
 -- [x * A] or X
-ctyparam :: Parser (String, Type)
+ctyparam :: Parser (String, SType)
 ctyparam =
   choice
     [ do n <- uidentifier

@@ -21,7 +21,7 @@ import           SEDEL.Source.Syntax
 import           SEDEL.Source.TypeCheck
 import           SEDEL.Target.Eval
 
-type Result = Either FDoc (Type, Text)
+type Result = Either FDoc (SType, Text)
 
 parseExpectedOutput :: Text -> Maybe Text
 parseExpectedOutput source =
@@ -43,7 +43,7 @@ driver ctx abt = do
     Left er -> return (Left (pprint er))
 
 
-render :: (Type, Text) -> FDoc
+render :: (SType, Text) -> FDoc
 render (ty, res) =
   "Typing result" <> Pretty.line <> Pretty.colon <+>
   pprint ty <> Pretty.line <> Pretty.line <> "Evaluation result" <> Pretty.line <> "=>" <+>

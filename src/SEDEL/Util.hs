@@ -16,7 +16,7 @@ translate (Bn x y) = Bn x y
 evar :: String -> Expr
 evar = Var . s2n
 
-tvar :: String -> Type
+tvar :: String -> SType
 tvar = TVar . s2n
 
 ebind :: String -> Expr -> Bind TmName Expr
@@ -26,19 +26,19 @@ elam :: String -> Expr -> Expr
 elam b e = Lam (ebind b e)
 
 
-elam2 :: (String, Type) -> Expr -> Expr
+elam2 :: (String, SType) -> Expr -> Expr
 elam2 (x, t) e = LamA (bind (s2n x, embed t) e)
 
-dlam :: (String, Type) -> Expr -> Expr
+dlam :: (String, SType) -> Expr -> Expr
 dlam (s, t) b = DLam (bind (s2n s, embed t) b)
 
-tforall :: (String,  Type) -> Type -> Type
+tforall :: (String,  SType) -> SType -> SType
 tforall (s, t) b = DForall (bind (s2n s, embed t) b)
 
 eapp :: Expr -> Expr -> Expr
 eapp = App
 
-etapp :: Expr -> Type -> Expr
+etapp :: Expr -> SType -> Expr
 etapp = TApp
 
 mkRecds :: [(Label, Expr)] -> Expr
@@ -48,24 +48,24 @@ mkRecds ((l, e):r) = foldl' (\t (l', e') -> Merge t (DRec l' e')) (DRec l e) r
 mkRecds' :: [TmBind] -> Expr
 mkRecds' = foldl1' Merge . map DRec'
 
-mkRecdsT :: [(Label, Type)] -> Type
+mkRecdsT :: [(Label, SType)] -> SType
 mkRecdsT [] = TopT
 mkRecdsT ((l, e):r) = foldl (\t (l', e') -> And t (SRecT l' e')) (SRecT l e) r
 
-mkArr :: Type -> [Type] ->Type
+mkArr :: SType -> [SType] ->SType
 mkArr = foldr Arr
 
-mkForall :: Type -> [(TyName, Embed Type)] -> Type
+mkForall :: SType -> [(TyName, Embed SType)] -> SType
 mkForall = foldr (\b t -> DForall (bind b t))
 
-eletr :: String -> Type -> Expr -> Expr -> Expr
+eletr :: String -> SType -> Expr -> Expr -> Expr
 eletr s t e b = Letrec (bind (s2n s, embed (Just t)) (e, b))
 
 
 elet :: String -> Expr -> Expr -> Expr
 elet s e b = Letrec (bind (s2n s, embed Nothing) (e, b))
 
-transNew :: Type -> [Expr] -> Expr
+transNew :: SType -> [Expr] -> Expr
 transNew ty es =
   eletr
     "self"

@@ -21,7 +21,7 @@ import           SEDEL.Source.Syntax
 import           SEDEL.Source.Desugar
 import qualified SEDEL.Target.Syntax as T
 
-data L = LTy Type | LLa Label
+data L = LTy SType | LLa Label
 
 {- |
 
@@ -104,7 +104,7 @@ Subtyping (<:) is defined only between types of kind *.
 WARN: They must be expanded first
 
 -}
-subtype :: Ctx -> Type -> Type -> Either FDoc T.UExpr
+subtype :: Ctx -> SType -> SType -> Either FDoc T.UExpr
 subtype ctx st tt = runExcept $ runFreshMT go
   where
     go :: (FreshMT (Except FDoc)) T.UExpr
@@ -112,7 +112,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
       let a = expandType ctx st
       let b = expandType ctx tt
       subtypeS Q.empty a b
-    subtypeS :: Q.Seq L -> Type -> Type -> (FreshMT (Except FDoc)) T.UExpr
+    subtypeS :: Q.Seq L -> SType -> SType -> (FreshMT (Except FDoc)) T.UExpr
     -- Base cases
     subtypeS Empty NumT NumT = return coId
     subtypeS Empty BoolT BoolT = return coId

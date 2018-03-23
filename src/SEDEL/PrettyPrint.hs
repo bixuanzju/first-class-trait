@@ -75,7 +75,7 @@ instance FPretty S.Kind where
     k2' <- ppr k2
     return $ k1' <+> "->" <+> k2'
 
-instance FPretty S.Type where
+instance FPretty S.SType where
   ppr (S.Arr t1 t2) = do
     t1' <- ppr t1
     t2' <- ppr t2
@@ -210,7 +210,6 @@ instance FPretty S.Expr where
     return $ enclose' "" "" " else " ("else  ") (fmap duplicate d)
   ppr (S.DRec l e) = do
     e' <- ppr e
-    undefined
     return $ braces [Pretty.pretty l <+> "=" <+> e']
   ppr (S.Acc e l) = do
     e' <- ppr e

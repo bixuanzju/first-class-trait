@@ -217,7 +217,7 @@ and
 /\ A*T1. B*T2. \x.\y.e
 
 -}
-normalize :: [(TyName, Type)] -> [(TmName, Maybe Type)] -> Expr -> Maybe Type -> (Expr, Maybe Type)
+normalize :: [(TyName, SType)] -> [(TmName, Maybe SType)] -> Expr -> Maybe SType -> (Expr, Maybe SType)
 normalize tyParams params e ret = (body, tbody)
   where
     tbody =
@@ -246,10 +246,10 @@ normalize tyParams params e ret = (body, tbody)
 
 
 -- | Recursively expand all type synonyms. The given type must be well-kinded.
-expandType :: Ctx -> Type -> Type
+expandType :: Ctx -> SType -> SType
 expandType ctx ty = runFreshM (go ctx ty)
   where
-    go :: Ctx -> Type -> FreshM Type
+    go :: Ctx -> SType -> FreshM SType
     -- Interesting cases:
     go d (TVar a) =
       case lookupTVarSynMaybe d a of
