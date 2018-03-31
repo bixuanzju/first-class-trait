@@ -2,15 +2,15 @@
 
 module SEDEL.Source.Syntax where
 
-import           SEDEL.Common
-
+import           Data.Maybe (fromMaybe)
 import           Data.Text.Prettyprint.Doc (Pretty)
 import qualified Data.Text.Prettyprint.Doc as Pretty
 import           GHC.Generics (Generic)
-import           Unbound.Generics.LocallyNameless
-import Unbound.Generics.LocallyNameless.TH
 import           Text.Megaparsec
-import Data.Maybe (fromMaybe)
+import           Unbound.Generics.LocallyNameless
+import           Unbound.Generics.LocallyNameless.TH
+
+import           SEDEL.Common
 
 
 -- | Modules

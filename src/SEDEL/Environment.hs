@@ -139,15 +139,13 @@ lookupTVarSynMaybe ctx v =
 lookupTmDef
   :: (MonadReader Ctx m)
   => TmName -> m (Maybe Expr)
-lookupTmDef v = do
-  env <- asks bndCtx
-  return $ M.lookup v env
+lookupTmDef v = M.lookup v <$> asks bndCtx
 
 -- | Push a new source position on the location stack.
 extendSourceLocation ::
      (MonadReader Ctx m, FPretty t) => SourcePos -> t -> m a -> m a
 extendSourceLocation p t =
-  local (\ e@(Ctx {sourceLocation = locs}) -> e {sourceLocation = (SourceLocation p t):locs})
+  local (\ e@Ctx {sourceLocation = locs} -> e {sourceLocation = SourceLocation p t:locs})
 
 
 -- | Marked locations in the source code
@@ -165,7 +163,7 @@ instance Monoid Err where
 
 instance FPretty Err where
   ppr (Err [] msg) = return msg
-  ppr (Err ((SourceLocation p term):_) msg) = do
+  ppr (Err (SourceLocation p term:_) msg) = do
     trm <- ppr term
     return $
       Pretty.vsep [Pretty.pretty p, msg, "In the expression:", trm]
