@@ -1,8 +1,4 @@
-# SEDEL
-
-## Paper with Appendix and Proofs
-
-[paper-appendix.pdf](paper-appendix.pdf)
+# SEDEL - A Type System for First-Class Traits
 
 ## Build and Run
 
