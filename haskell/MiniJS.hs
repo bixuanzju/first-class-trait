@@ -1,13 +1,12 @@
-data Type
-  = TInt
-  | TBool
-  deriving (Eq, Show)
+data Type = TInt
+          | TBool
+          deriving (Eq, Show)
 
 data Value = IntV  Int
            | BoolV Bool
            deriving Eq
 
-type TEnv = [(String,Type)]
+type TEnv = [(String, Type)]
 
 type Env = [(String, Value)]
 

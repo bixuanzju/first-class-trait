@@ -1,7 +1,6 @@
-data Type
-  = TInt
-  | TBool
-  deriving (Eq, Show)
+data Type = TInt
+          | TBool
+          deriving (Eq, Show)
 
 data Value = IntV  Int
            | BoolV Bool

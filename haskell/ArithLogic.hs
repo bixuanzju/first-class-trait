@@ -1,13 +1,12 @@
-data Type
-  = TInt
-  | TBool
-  deriving (Eq, Show)
+data Type = TInt
+          | TBool
+          deriving (Eq, Show)
 
 data Value = IntV  Int
            | BoolV Bool
            deriving Eq
 
-type TEnv = [(String,Type)]
+type TEnv = [(String, Type)]
 
 type Env = [(String, Value)]
 
@@ -19,6 +18,10 @@ data Exp = Num Int
          | Div Exp Exp
          | B Bool
          | If Exp Exp Exp
+         | Eq Exp Exp
+         | Lt Exp Exp
+         | And Exp Exp
+         | Or Exp Exp
 
 -- Evaluator
 evaluate :: Exp -> Env -> Maybe Value
@@ -45,7 +48,22 @@ evaluate (If e1 e2 e3) env = do
   a <- evaluate e2 env
   b <- evaluate e3 env
   return (if f then a else b)
-
+evaluate (Eq a b) env = do
+  (IntV av) <- evaluate a env
+  (IntV bv) <- evaluate b env
+  return (BoolV (av == bv))
+evaluate (Lt a b) env = do
+  (IntV av) <- evaluate a env
+  (IntV bv) <- evaluate b env
+  return (BoolV (av < bv))
+evaluate (And e1 e2) env = do
+  (BoolV e1') <- evaluate e1 env
+  (BoolV e2') <- evaluate e1 env
+  return (BoolV (e1' && e2'))
+evaluate (Or e1 e2) env = do
+  (BoolV e1') <- evaluate e1 env
+  (BoolV e2') <- evaluate e1 env
+  return (BoolV (e1' || e2'))
 
 -- Type checker
 tcheck :: Exp -> TEnv -> Maybe Type
@@ -75,6 +93,22 @@ tcheck (If e1 e2 e3) env =
           | t1 == t2 -> Just t1
         _ -> Nothing
     _ -> Nothing
+tcheck (Eq a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TInt, Just TInt) -> Just TBool
+    _ -> Nothing
+tcheck (Lt a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TInt, Just TInt) -> Just TBool
+    _ -> Nothing
+tcheck (And a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TBool, Just TBool) -> Just TBool
+    _ -> Nothing
+tcheck (Or a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TBool, Just TBool) -> Just TBool
+    _ -> Nothing
 
 
 -- Pretty printer
@@ -86,3 +120,7 @@ pretty (Mult exp1 exp2) = "(" ++ pretty exp1 ++ " * " ++ pretty exp2 ++ ")"
 pretty (Div exp1 exp2) = "(" ++ pretty exp1 ++ " / " ++ pretty exp2 ++ ")"
 pretty (B b) = show b
 pretty (If e1 e2 e3) = "(if " ++ pretty e1 ++ " then " ++ pretty e2 ++ " else " ++ pretty e3 ++ ")"
+pretty (Eq exp1 exp2) = "(" ++ pretty exp1 ++ " == " ++ pretty exp2 ++ ")"
+pretty (Lt exp1 exp2) = "(" ++ pretty exp1 ++ " == " ++ pretty exp2 ++ ")"
+pretty (And exp1 exp2) = "(" ++ pretty exp1 ++ " && " ++ pretty exp2 ++ ")"
+pretty (Or exp1 exp2) = "(" ++ pretty exp1 ++ " || " ++ pretty exp2 ++ ")"

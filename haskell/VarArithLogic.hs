@@ -1,7 +1,6 @@
-data Type
-  = TInt
-  | TBool
-  deriving (Eq, Show)
+data Type = TInt
+          | TBool
+          deriving (Eq, Show)
 
 data Value = IntV  Int
            | BoolV Bool
@@ -21,6 +20,10 @@ data Exp = Num Int
          | If Exp Exp Exp
          | Eq Exp Exp
          | Lt Exp Exp
+         | Var String
+         | Decl String Exp Exp
+         | And Exp Exp
+         | Or Exp Exp
 
 -- Evaluator
 evaluate :: Exp -> Env -> Maybe Value
@@ -55,6 +58,20 @@ evaluate (Lt a b) env = do
   (IntV av) <- evaluate a env
   (IntV bv) <- evaluate b env
   return (BoolV (av < bv))
+evaluate (Var s) env = lookup s env
+evaluate (Decl n a b) env = do
+  v <- evaluate a env
+  evaluate b ((n, v) : env)
+evaluate (And e1 e2) env = do
+  (BoolV e1') <- evaluate e1 env
+  (BoolV e2') <- evaluate e1 env
+  return (BoolV (e1' && e2'))
+evaluate (Or e1 e2) env = do
+  (BoolV e1') <- evaluate e1 env
+  (BoolV e2') <- evaluate e1 env
+  return (BoolV (e1' || e2'))
+
+
 
 -- Type checker
 tcheck :: Exp -> TEnv -> Maybe Type
@@ -92,7 +109,19 @@ tcheck (Lt a b) env =
   case (tcheck a env, tcheck b env) of
     (Just TInt, Just TInt) -> Just TBool
     _ -> Nothing
-
+tcheck (Var s) env = lookup s env
+tcheck (Decl v e1 e2) tenv =
+  case tcheck e1 tenv of
+    Just t  -> tcheck e2 ((v, t) : tenv)
+    Nothing -> Nothing
+tcheck (And a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TBool, Just TBool) -> Just TBool
+    _ -> Nothing
+tcheck (Or a b) env =
+  case (tcheck a env, tcheck b env) of
+    (Just TBool, Just TBool) -> Just TBool
+    _ -> Nothing
 
 -- Pretty printer
 pretty :: Exp -> String
@@ -104,4 +133,8 @@ pretty (Div exp1 exp2) = "(" ++ pretty exp1 ++ " / " ++ pretty exp2 ++ ")"
 pretty (B b) = show b
 pretty (If e1 e2 e3) = "(if " ++ pretty e1 ++ " then " ++ pretty e2 ++ " else " ++ pretty e3 ++ ")"
 pretty (Eq exp1 exp2) = "(" ++ pretty exp1 ++ " == " ++ pretty exp2 ++ ")"
-pretty (Lt exp1 exp2) = "(" ++ pretty exp1 ++ " == " ++ pretty exp2 ++ ")"
+pretty (Lt exp1 exp2) = "(" ++ pretty exp1 ++ " < " ++ pretty exp2 ++ ")"
+pretty (Var s) = s
+pretty (Decl n e1 e2) = "var " ++ n ++ " = " ++ pretty e1 ++ "; " ++ pretty e2
+pretty (And exp1 exp2) = "(" ++ pretty exp1 ++ " && " ++ pretty exp2 ++ ")"
+pretty (Or exp1 exp2) = "(" ++ pretty exp1 ++ " || " ++ pretty exp2 ++ ")"
