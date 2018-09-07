@@ -47,5 +47,5 @@ spec = do
 main :: IO ()
 main = do
   fileTests <- testSpec "Unit tests" spec
-  let tests = testGroup "Fun tests" [fileTests]
+  let tests = testGroup " SEDEL tests" [fileTests]
   defaultMain tests

@@ -156,9 +156,12 @@ data SourceLocation where
 -- | An error that should be reported to the user
 data Err = Err [SourceLocation] FDoc
 
+instance Semigroup Err where
+  (Err src1 d1 ) <> (Err src2 d2) = Err (src1 ++ src2) (d1 <> d2)
+
 instance Monoid Err where
   mempty = Err [] mempty
-  mappend (Err src1 d1) (Err src2 d2) = Err (src1 ++ src2) (d1 `mappend` d2)
+  mappend = (<>)
 
 
 instance FPretty Err where

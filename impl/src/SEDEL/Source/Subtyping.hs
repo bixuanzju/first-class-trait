@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE LambdaCase #-}
 
 module SEDEL.Source.Subtyping
   ( subtype
@@ -21,7 +20,7 @@ import           SEDEL.Source.Syntax
 import           SEDEL.Source.Desugar
 import qualified SEDEL.Target.Syntax as T
 
-data L = LTy SType | LLa Label
+data L = LTy SType | LLa Label | LAll TyName SType
 
 {- |
 
@@ -40,11 +39,11 @@ coTrans :: Co -> Co -> Co
 coTrans c1 c2 = T.elam "x" (T.eapp c1 (T.eapp c2 (T.evar "x")))
 
 
-coTop1 :: Co
-coTop1 = T.elam "x" T.UUnit
+coTop :: Co
+coTop = T.elam "x" T.UUnit
 
-coTop2 :: Co
-coTop2 = T.elam "x" (T.elam "y" T.UUnit)
+coTopArr :: Co
+coTopArr = T.elam "x" (T.elam "y" T.UUnit)
 
 coArr :: Co -> Co -> Co
 coArr c1 c2 =
@@ -65,31 +64,32 @@ coProj2 :: Co
 coProj2 = T.elam "x" (T.UP2 (T.evar "x"))
 
 
-coDist :: Co
-coDist = T.elam "x" (T.elam "y" $ T.UPair
+coDistArr :: Co
+coDistArr = T.elam "x" (T.elam "y" $ T.UPair
                      (T.eapp (T.UP1 (T.evar "x")) (T.evar "y"))
                      (T.eapp (T.UP2 (T.evar "x")) (T.evar "y")))
+
 
 
 {- |
 
 ----------------------------
--- Metafunction
+-- Meta-function
 ----------------------------
 
 -}
 calTop :: Seq L -> Co
-calTop Empty = coTop1
+calTop Empty = coTop
 calTop (LLa _ :<| fs) = coTrans (calTop fs) coId
 calTop (LTy _ :<| fs) =
-  coTrans (coArr coId (calTop fs)) (coTrans (coArr coTop1 coTop1) (coTrans coTop2 coTop1))
-calTop _ = panic "Impossible happened in calTop"
+  coTrans (coArr coTop (calTop fs)) coTopArr
+calTop (LAll _ _ :<| fs) = coTrans (calTop fs) coId
 
 calAnd :: Seq L -> Co
 calAnd Empty = coId
 calAnd (LLa _ :<| fs) = coTrans (calAnd fs) coId
-calAnd (LTy _ :<| fs) = coTrans (coArr coId (calAnd fs)) coDist
-calAnd _ = panic "Impossible happened in calAnd"
+calAnd (LTy _ :<| fs) = coTrans (coArr coId (calAnd fs)) coDistArr
+calAnd (LAll _ _ :<| fs) = coTrans (calAnd fs) coId
 
 
 
@@ -117,7 +117,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
     subtypeS Empty NumT NumT = return coId
     subtypeS Empty BoolT BoolT = return coId
     subtypeS Empty StringT StringT = return coId
-    subtypeS fs _ TopT = return $ coTrans (calTop fs) coTop1
+    subtypeS fs _ TopT = return $ coTrans (calTop fs) coTop
     subtypeS Empty (TVar a) (TVar b) =
       if a /= b
         then throwError $
@@ -125,11 +125,6 @@ subtype ctx st tt = runExcept $ runFreshMT go
              Pretty.squotes (Pretty.pretty a) <+>
              "and" <+> Pretty.squotes (Pretty.pretty b)
         else return coId
-    subtypeS Empty (DForall t1) (DForall t2) =
-      unbind2 t1 t2 >>= \case
-        Just ((_, Embed a1), b1, (_, Embed a2), b2) ->
-          subtypeS Q.empty a2 a1 >> subtypeS Q.empty b1 b2
-        Nothing -> throwError "Patterns have different binding variables"
     -- NumT
     subtypeS fs (And a1 a2) NumT = do
       let c1 = do
@@ -150,6 +145,10 @@ subtype ctx st tt = runExcept $ runFreshMT go
              "Labels" <+>
              Pretty.squotes (Pretty.pretty l) <+>
              "and" <+> Pretty.squotes (Pretty.pretty l') <+> "mismatch"
+    subtypeS (LAll tv a :<| fs) (DForall b) NumT = do
+        ((tv' , Embed b'),  t) <- unbind b
+        subtypeS Q.empty a b'
+        subtypeS fs (subst tv' (TVar tv) t) NumT
     -- BoolT
     subtypeS fs (And a1 a2) BoolT = do
       let c1 = do
@@ -169,6 +168,10 @@ subtype ctx st tt = runExcept $ runFreshMT go
         else throwError $
              "Labels" <+>
              Pretty.pretty l <+> "and" <+> Pretty.pretty l' <+> "mismatch"
+    subtypeS (LAll tv a :<| fs) (DForall b) BoolT = do
+        ((tv' , Embed b'),  t) <- unbind b
+        subtypeS Q.empty a b'
+        subtypeS fs (subst tv' (TVar tv) t) BoolT
     -- StringT
     subtypeS fs (And a1 a2) StringT = do
       let c1 = do
@@ -189,7 +192,11 @@ subtype ctx st tt = runExcept $ runFreshMT go
              "Labels" <+>
              Pretty.squotes (Pretty.pretty l) <+>
              "and" <+> Pretty.squotes (Pretty.pretty l') <+> "mismatch"
-    -- Alpha
+    subtypeS (LAll tv a :<| fs) (DForall b) StringT = do
+        ((tv' , Embed b'),  t) <- unbind b
+        subtypeS Q.empty a b'
+        subtypeS fs (subst tv' (TVar tv) t) StringT
+    -- type variable
     subtypeS fs (And a1 a2) (TVar x) = do
       let c1 = do
             c <- subtypeS fs a1 (TVar x)
@@ -209,26 +216,10 @@ subtype ctx st tt = runExcept $ runFreshMT go
              "Labels" <+>
              Pretty.squotes (Pretty.pretty l) <+>
              "and" <+> Pretty.squotes (Pretty.pretty l') <+> "mismatch"
-    -- Forall
-    subtypeS fs (And a1 a2) (DForall t) = do
-      let c1 = do
-            c <- subtypeS fs a1 (DForall t)
-            return $ coTrans c coProj1
-          c2 = do
-            c <- subtypeS fs a2 (DForall t)
-            return $ coTrans c coProj2
-      c1 `catchError` const c2
-    subtypeS (LTy a :<| fs) (Arr a1 a2) (DForall t) = do
-      c1 <- subtypeS Q.empty a a1
-      c2 <- subtypeS fs a2 (DForall t)
-      return $ coArr c1 c2
-    subtypeS (LLa l :<| fs) (SRecT l' a) (DForall t) =
-      if l == l'
-        then subtypeS fs a (DForall t)
-        else throwError $
-             "Labels" <+>
-             Pretty.squotes (Pretty.pretty l) <+>
-             "and" <+> Pretty.squotes (Pretty.pretty l') <+> "mismatch"
+    subtypeS (LAll tv a :<| fs) (DForall b) (TVar x) = do
+        ((tv' , Embed b'),  t) <- unbind b
+        subtypeS Q.empty a b'
+        subtypeS fs (subst tv' (TVar tv) t) (TVar x)
     -- Inductive cases
     subtypeS fs a (And b1 b2) = do
       c1 <- subtypeS fs a b1
@@ -236,6 +227,9 @@ subtype ctx st tt = runExcept $ runFreshMT go
       return $ coTrans (calAnd fs) (coPair c1 c2)
     subtypeS fs a (Arr b1 b2) = subtypeS (fs |> LTy b1) a b2
     subtypeS fs a (SRecT l b) = subtypeS (fs |> LLa l) a b
+    subtypeS fs a (DForall b) = do
+      ((tv, Embed b'), t) <- unbind b
+      subtypeS (fs |> LAll tv b') a t
     subtypeS _ a b =
       throwError $
       "No subtyping relation between" <+>

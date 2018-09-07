@@ -62,30 +62,3 @@ alg = close (IEval & IPrint) (merge IEval IPrint evalAlg printAlg3);
 exp : Exp = { accept E f = f.add (f.lit 4) (f.lit 7) };
 
 main = (exp.accept (IEval & IPrint) alg).print
-
-
--- -- trait printAlg2 : OExpAlg[IEval & IPrint, IPrint] { self =>
-
--- --   def lit x  = \oself -> { print = x.toString }
-
--- --   def add e1 e2 = \oself -> { print =
--- --     e1.print ++ " + " ++ e2.print ++ " = " ++ oself.eval.toString
--- --   }
-
--- -- }
-
--- -- This doesn't work, needs extra subtyping rule(s)?
--- -- def m = new [OExpAlg[IEval & IPrint, IEval & IPrint]] evalAlg & printAlg2
-
--- -- trait mergeF (a : Trait[OExpAlg[IEval & IPrint, IEval]], b : Trait[OExpAlg[IEval & IPrint, IPrint]])
--- --   : OExpAlg[IEval & IPrint, IEval & IPrint] { self =>
-
--- --   def lit x = \oself -> (new[OExpAlg[IEval & IPrint, IEval]] a).lit x oself ,, (new[OExpAlg[IEval & IPrint, IPrint]] b).lit x oself
-
--- --   def add e1 e2 = \oself -> (new[OExpAlg[IEval & IPrint, IEval]] a).add e1 e2 oself ,, (new[OExpAlg[IEval & IPrint, IPrint]] b).add e1 e2 oself
-
--- -- }
-
--- -- def m = new[OExpAlg[IEval & IPrint, IEval & IPrint]] mergeF(evalAlg, printAlg2)
-
--- -- def newAlg : ExpAlg[IEval & IPrint] = fcloseAlg (IEval & IPrint) m
