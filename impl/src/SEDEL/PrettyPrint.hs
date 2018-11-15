@@ -100,6 +100,7 @@ instance FPretty S.SType where
     t' <- ppr t
     return (Pretty.braces $ Pretty.pretty l <+> Pretty.colon <+> t')
   ppr S.TopT = return $ "Top"
+  ppr S.BotT = return $ "Bot"
   ppr (S.OpAbs b) =
     lunbind b $ \((x, Embed k), t) -> do
       t' <- ppr t

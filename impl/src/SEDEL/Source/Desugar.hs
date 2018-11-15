@@ -286,3 +286,4 @@ expandType ctx ty = runFreshM (go ctx ty)
       t' <- go d t
       return $ SRecT l t'
     go _ TopT = return TopT
+    go _ BotT = return BotT

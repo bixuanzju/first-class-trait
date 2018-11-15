@@ -356,6 +356,7 @@ tconst =
     , rword "String" $> StringT
     , rword "Bool" $> BoolT
     , rword "Top" $> TopT
+    , rword "Bot" $> BotT
     ]
 
 
@@ -502,6 +503,7 @@ rws =
   , "true"
   , "false"
   , "Top"
+  , "Bot"
   , "override"
   ]
 

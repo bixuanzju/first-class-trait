@@ -69,6 +69,7 @@ kind _ NumT = return $ Just Star
 kind _ BoolT = return $ Just Star
 kind _ StringT = return $ Just Star
 kind _ TopT = return $ Just Star
+kind _ BotT = return $ Just Star
 kind d (Arr t1 t2) = justStarIffAllHaveKindStar d [t1, t2]
 kind d (And t1 t2) = justStarIffAllHaveKindStar d [t1, t2]
 kind d (DForall b) = do
@@ -422,8 +423,8 @@ infer (Pos p tm) = extendSourceLocation p tm $ infer tm
 
 
 -- Value of forall A . A, evaluating it would cause disaster :-)
-infer Bot =
-  return (tforall ("A", TopT) (tvar "A"), T.Bot)
+infer Bot = return (BotT, T.Bot)
+  -- return (tforall ("A", TopT) (tvar "A"), T.Bot)
 
 infer a = errThrow [DS "Infer not implemented:", DD a]
 
@@ -565,22 +566,52 @@ wf ty = do
       localCtx (extendConstrainedTVarCtx x a) $ go b
     go (SRecT _ t) = go t
     go TopT = return ()
+    go BotT = return ()
     go t = errThrow [DS $ "type" <+> Pretty.squotes (pprint t) <+> "is not well-formed"]
 
 
-{- |
+{-
 
 WARN: This is the most critical component!!!
 
 Anything new added in the types, we should double check how it
 affects the disjointess relation
 
-
 -}
+
+
+topLike :: Fresh m => SType -> m Bool
+topLike TopT = return True
+topLike (And a b) = (&&) <$> (topLike a) <*> (topLike b)
+topLike (Arr a b) = topLike b
+topLike (SRecT _ t) = topLike t
+topLike (DForall b) = do
+  ((_, _), t) <- unbind b
+  topLike t
+topLike _ = return False
 
 disjoint :: Ctx -> SType -> SType -> TcMonad ()
 disjoint _ TopT _ = return ()
 disjoint _ _ TopT = return ()
+
+disjoint _ BotT a = do
+  isTop <- topLike a
+  if isTop
+    then return ()
+    else errThrow
+           [ DS $
+             "Bottom is only disjoint to top-like types, but" <+>
+             Pretty.squotes (pprint a) <+> "is not top-like"
+           ]
+disjoint _ a BotT = do
+  isTop <- topLike a
+  if isTop
+    then return ()
+    else errThrow
+           [ DS $
+             "Bottom is only disjoint to top-like types, but" <+>
+             Pretty.squotes (pprint a) <+> "is not top-like"
+           ]
 
 disjoint ctx (TVar x) b
   | Just a <- lookupTVarConstraintMaybe ctx x
@@ -644,6 +675,7 @@ disjointAx t1 t2 =
     type2num TVar {} = 8
     type2num OpAbs {} = 9
     type2num OpApp {} = 10
+    type2num BotT {} = 11
 
 
 

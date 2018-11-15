@@ -22,7 +22,7 @@ bind A B (x : Maybe[A]) (f : A -> Maybe[B]) : Maybe[B] =
   x.match Maybe[B] { nothing = nothing B, just (a : A) = f a };
 
 fromJust A (x : Maybe[A]) : A =
-  x.match A { nothing = undefined A, just (b : A) = b };
+  x.match A { nothing = undefined, just (b : A) = b };
 
 isJust A (x : Maybe[A]) : Bool =
   x.match Bool { nothing = false, just (_ : A) = true };
@@ -75,10 +75,10 @@ numV (n : Double) : Value = { match C f = f.numV n };
 boolV (b : Bool) : Value = { match C f = f.boolV b };
 
 fromNum (v : Value) : Double =
-  v.match Double { numV (n : Double) = n, boolV (_ : Bool) = undefined Double};
+  v.match Double { numV (n : Double) = n, boolV (_ : Bool) = undefined};
 
 fromBool (v : Value) : Bool =
-  v.match Bool { numV (_ : Double) = undefined Bool, boolV (b : Bool) = b };
+  v.match Bool { numV (_ : Double) = undefined, boolV (b : Bool) = b };
 
 
 -----------------------------

@@ -117,6 +117,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
     subtypeS Empty NumT NumT = return coId
     subtypeS Empty BoolT BoolT = return coId
     subtypeS Empty StringT StringT = return coId
+    subtypeS Empty BotT BotT = return coId
     subtypeS fs _ TopT = return $ coTrans (calTop fs) coTop
     subtypeS Empty (TVar a) (TVar b) =
       if a /= b
@@ -149,6 +150,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
         ((tv' , Embed b'),  t) <- unbind b
         subtypeS Q.empty a b'
         subtypeS fs (subst tv' (TVar tv) t) NumT
+    subtypeS _ BotT NumT = return T.Bot
     -- BoolT
     subtypeS fs (And a1 a2) BoolT = do
       let c1 = do
@@ -172,6 +174,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
         ((tv' , Embed b'),  t) <- unbind b
         subtypeS Q.empty a b'
         subtypeS fs (subst tv' (TVar tv) t) BoolT
+    subtypeS _ BotT BoolT = return T.Bot
     -- StringT
     subtypeS fs (And a1 a2) StringT = do
       let c1 = do
@@ -196,6 +199,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
         ((tv' , Embed b'),  t) <- unbind b
         subtypeS Q.empty a b'
         subtypeS fs (subst tv' (TVar tv) t) StringT
+    subtypeS _ BotT StringT = return T.Bot
     -- type variable
     subtypeS fs (And a1 a2) (TVar x) = do
       let c1 = do
@@ -220,6 +224,7 @@ subtype ctx st tt = runExcept $ runFreshMT go
         ((tv' , Embed b'),  t) <- unbind b
         subtypeS Q.empty a b'
         subtypeS fs (subst tv' (TVar tv) t) (TVar x)
+    subtypeS _ BotT (TVar _) = return T.Bot
     -- Inductive cases
     subtypeS fs a (And b1 b2) = do
       c1 <- subtypeS fs a b1

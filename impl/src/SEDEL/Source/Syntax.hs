@@ -97,6 +97,7 @@ data SType = NumT
           | DForall (Bind (TyName, Embed SType) SType)
           | SRecT Label SType
           | TopT
+          | BotT
           | OpAbs (Bind (TyName, Embed Kind) SType)
           -- ^ SType-level abstraction: "type T A = t" becomes "type T = \A : *. t",
           | OpApp SType SType
