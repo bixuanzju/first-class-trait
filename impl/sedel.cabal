@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2c5eca4faade7ab0b6f352cc4f5c4e3b0ea96959521a9da1bb65bc2660ae9f8e
+-- hash: bb1afe7b69b0ecb45c63984bd35977cf341e2561fbe4bbe28d5ff9e08084fd53
 
 name:           sedel
 version:        0.1.0.0
@@ -15,7 +17,6 @@ copyright:      2016-2017, Anonymous
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-cabal-version:  >= 1.10
 
 library
   hs-source-dirs:
