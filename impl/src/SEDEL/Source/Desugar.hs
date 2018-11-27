@@ -98,6 +98,80 @@ desugarExpr = runFreshM . go
     go e = return e
 
 
+-- FIXME: specially for desugaring trait inherit clause (remove position information)
+-- An idea way to do is to make desugaring context-aware (whether we are in the trait inherit clause)
+desugarExpr2 :: Expr -> Expr
+desugarExpr2 = runFreshM . go
+  where
+
+    go :: Fresh m => Expr -> m Expr
+
+    -- Interesting cases
+    go (AnonyTrait t) = return $ desugarTrait t
+
+    go (DRec' b) =
+      let (l, e) = normalizeTmDecl (desugarTmBind b)
+      in return $ DRec l e
+
+    -- Routine
+    go (Anno e t) = do
+      e' <- go e
+      return $ Anno e' t
+    go (App e1 e2) = do
+      e1' <- go e1
+      e2' <- go e2
+      return $ App e1' e2'
+    go (Lam t) = do
+      (n, body) <- unbind t
+      body' <- go body
+      return $ Lam (bind n body')
+
+    go (Letrec t) = do
+      ((n, pt), (e, body)) <- unbind t
+      bind' <- go e
+      body' <- go body
+      return $ Letrec (bind (n, pt) (bind', body'))
+
+    go (DLam b) = do
+      ((n, t), body) <- unbind b
+      body' <- go body
+      return $ DLam (bind (n, t) body')
+    go (TApp e t) = do
+      e' <- go e
+      return $ TApp e' t
+    go (DRec l e) = do
+      e' <- go e
+      return $ DRec l e'
+    go (Acc e l) = do
+      e' <- go e
+      return $ Acc e' l
+    go (Remove e l t) = do
+      e' <- go e
+      return $ Remove e' l t
+    go (Merge e1 e2) = do
+      e1' <- go e1
+      e2' <- go e2
+      return $ Merge e1' e2'
+    go (PrimOp op e1 e2) = do
+      e1' <- go e1
+      e2' <- go e2
+      return $ PrimOp op e1' e2'
+    go (If e1 e2 e3) = do
+      e1' <- go e1
+      e2' <- go e2
+      e3' <- go e3
+      return $ If e1' e2' e3'
+    go (LamA b) = do
+      ((n, t), body) <- unbind b
+      body' <- go body
+      return $ LamA (bind (n, t) body')
+    go (Pos p e) = do
+      e' <- go e
+      return e'
+    go e = return e
+
+
+
 
 {- | Desugar trait
 
@@ -138,8 +212,8 @@ desugarTrait trait = expr
     inherits =
       map
         (\t ->
-           case desugarExpr t of
-             Pos p (Remove e l t') -> Pos p (Remove (App e (evar self)) l t')
+           case desugarExpr2 t of
+             (Remove e l t') -> Remove (App e (evar self)) l t'
              -- hack for trait excluding
              t' -> App t' (evar self))
         (traitSuper trait)
@@ -151,18 +225,6 @@ desugarTrait trait = expr
 
 
 
--- After parsing, earlier declarations appear first in the list
--- Substitute away all type declarations
--- resolveDecls :: [SDecl] -> [TmBind]
--- resolveDecls decls = map (substs substPairs) [decl | (DefDecl decl) <- decls]
---   where
---     tydecls =
---       foldl'
---         (\ds t -> substs (toSubst ds) t : ds)
---         []
---         [decl | decl@TypeDecl {} <- decls]
---     substPairs = toSubst tydecls
---     toSubst ds = [(s2n n, t) | TypeDecl (TypeBind n _ t) <- ds]
 
 {- |
 
