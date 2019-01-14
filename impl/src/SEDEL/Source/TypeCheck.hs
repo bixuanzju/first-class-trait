@@ -582,7 +582,7 @@ affects the disjointess relation
 
 topLike :: Fresh m => SType -> m Bool
 topLike TopT = return True
-topLike (And a b) = (&&) <$> (topLike a) <*> (topLike b)
+topLike (And a b) = (&&) <$> topLike a <*> topLike b
 topLike (Arr a b) = topLike b
 topLike (SRecT _ t) = topLike t
 topLike (DForall b) = do
