@@ -9,7 +9,7 @@ import           Data.Void
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import           Text.Megaparsec.Expr
+import           Control.Monad.Combinators.Expr
 import           Unbound.Generics.LocallyNameless
 
 import           SEDEL.Common
@@ -22,7 +22,7 @@ type Parser = Parsec Void String
 parseModule :: String -> Either String Module
 parseModule s =
   case runParser (whole prog) "" s of
-    Left err -> Left $ parseErrorPretty err
+    Left err -> Left $ errorBundlePretty err
     Right e -> Right e
 
 
@@ -108,7 +108,7 @@ tyBind = do
 
 expr :: Parser Expr
 expr = do
-  p <- getPosition
+  p <- getSourcePos
   Pos p <$> makeExprParser term pOperators
 
 term :: Parser Expr

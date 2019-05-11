@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb1afe7b69b0ecb45c63984bd35977cf341e2561fbe4bbe28d5ff9e08084fd53
+-- hash: 2f9b8410e338d988b3a800307d23a3b13810ca44f4b1c16e56b1e61f11ae63f5
 
 name:           sedel
 version:        0.1.0.0
 synopsis:       type system for first-class traits
 description:    Please see README.md
 category:       Language
-author:         Anonymous
-maintainer:     anonymous@gmail.com
-copyright:      2016-2017, Anonymous
+author:         Jeremy
+maintainer:     bixuanxbi@gmail.com
+copyright:      2016-2019, Jeremy
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -31,6 +31,7 @@ library
     , haskeline
     , megaparsec >=6.0
     , mtl
+    , parser-combinators
     , prettyprinter
     , protolude >=0.2
     , repline
@@ -68,6 +69,7 @@ executable sedel-exe
     , haskeline
     , megaparsec >=6.0
     , mtl
+    , parser-combinators
     , prettyprinter
     , protolude >=0.2
     , repline
@@ -93,6 +95,7 @@ test-suite sedel-test
     , haskeline
     , megaparsec >=6.0
     , mtl
+    , parser-combinators
     , prettyprinter
     , protolude >=0.2
     , repline

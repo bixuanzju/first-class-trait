@@ -143,7 +143,7 @@ options = map (\(a, b, _) -> (a, b)) optionsWithHelp
 shell :: Repl a -> IO ()
 shell pre =
   flip evalStateT initState $
-  evalRepl "> " exec options (Prefix (wordCompleter comp) defaultMatcher) pre
+  evalRepl (pure "> ") exec options Nothing (Prefix (wordCompleter comp) defaultMatcher) pre
 
 verStr :: String
 verStr = "SEDEL, version 0.1"
